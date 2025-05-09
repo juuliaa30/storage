@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import FastAPI, Header, UploadFile, File, HTTPException
+from fastapi import FastAPI, Header, UploadFile, File, HTTPException, Form
 from fastapi.responses import FileResponse, JSONResponse, Response
 from pathlib import Path
 from datetime import datetime
@@ -59,6 +59,7 @@ def get_file_metadata(path: str):
 @app.put("/files/{path:path}")
 async def create_or_copy_file(
         path: str,
+        text: Optional[str] = Form(None),  # Используем Form для текста
         file: Optional[UploadFile] = File(None),
         copy_source: Optional[str] = Header(None, alias="X-Copy-From")
 ):
@@ -72,12 +73,17 @@ async def create_or_copy_file(
         shutil.copy2(source_path, destination_path)
         return JSONResponse(status_code=200, content={"message": "File was copied"})
 
-    if file is None:
-        raise HTTPException(status_code=400, detail="File was not selected")
+    if text is not None:
+        with open(destination_path, "w") as buffer:
+            buffer.write(text)
+        return Response(status_code=201, content="Text file was created")
 
-    with open(destination_path, "wb") as buffer:
-        buffer.write(await file.read())
-    return Response(status_code=201, content="File was loaded")
+    if file is not None:
+        with open(destination_path, "wb") as buffer:
+            buffer.write(await file.read())
+        return Response(status_code=201, content="File was loaded")
+
+    raise HTTPException(status_code=400, detail="Either file or text content must be provided")
 
 
 @app.delete("/files/{path:path}")
