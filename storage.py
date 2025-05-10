@@ -59,7 +59,7 @@ def get_file_metadata(path: str):
 @app.put("/files/{path:path}")
 async def create_or_copy_file(
         path: str,
-        text: Optional[str] = Form(None),  # Используем Form для текста
+        text: Optional[str] = Form(None),
         file: Optional[UploadFile] = File(None),
         copy_source: Optional[str] = Header(None, alias="X-Copy-From")
 ):
